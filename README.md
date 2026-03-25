@@ -1,5 +1,13 @@
 # 🏌️ Golf Charity Subscription Platform
 
+## 🎯 Live Demo Links
+
+* 🌐 **Frontend (Client-side)**
+  https://charity-subscription-platform-o2eu.vercel.app
+
+* ⚙️ **Backend (Server-side API)**
+  https://charity-subscription-platform-3.onrender.com
+
 ## 📌 Overview
 
 The Golf Charity Subscription Platform is a full-stack web application that allows users to:
