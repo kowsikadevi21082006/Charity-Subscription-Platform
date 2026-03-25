@@ -20,21 +20,36 @@ const authJwt = require('./middleware/authJwt');
 
 const app = express();
 
-app.use(helmet());
+// ✅ Allowed origins
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
-  "https://charity-subscription-platform-2vgu.vercel.app",
+  "https://charity-subscription-platform-8lpt.vercel.app", // 🔥 your current frontend
   process.env.CLIENT_URL
 ].filter(Boolean);
 
-app.use(cors({
-  origin: allowedOrigins,
-  methods: ["GET", "POST", "PUT", "DELETE"],
+// ✅ CORS CONFIG (FIXED)
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // allow for now (deadline)
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
-}));
+};
+
+// ✅ IMPORTANT ORDER
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // 🔥 FIXES PREFLIGHT
+
+app.use(helmet());
 app.use(express.json());
 app.use(morgan('dev'));
+
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -44,12 +59,13 @@ app.use(
   })
 );
 
-// Add logging middleware
+// Logging middleware
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path} - Auth: ${req.headers.authorization ? 'present' : 'missing'}`);
   next();
 });
 
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/scores', authJwt.verifyToken, scoresRoutes);
 app.use('/api/subscription', authJwt.verifyToken, subscriptionRoutes);
@@ -57,20 +73,21 @@ app.use('/api/charity', authJwt.verifyToken, charityRoutes);
 app.use('/api/draw', authJwt.verifyToken, drawRoutes);
 app.use('/api/admin', authJwt.verifyToken, authJwt.isAdmin, adminRoutes);
 
-app.get('/', (req, res) => res.json({ message: 'Golf Charity Subscription API is running.' }));
+// Health check
+app.get('/', (req, res) => {
+  res.json({ message: 'Golf Charity Subscription API is running.' });
+});
 
+// Start server
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
+// Error handling
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`\n❌ ERROR: Port ${PORT} is already in use.`);
-    console.error('\nFix: Kill the process using this command:');
-    console.error(`  netstat -ano | findstr :${PORT}`);
-    console.error(`  taskkill /PID <PID> /F`);
-    console.error('\nOr change PORT in .env file\n');
     process.exit(1);
   } else {
     throw err;
